@@ -1,0 +1,7 @@
+{
+	"Currency": [
+	{"Country":"New Zealand","CurrencyCode":"NZD", "CurrencyDesc":"New Zealand Dollars"},
+	{"Country":"Malaysia", "CurrencyCode":"MYR", "CurrencyDesc":"Malaysia Ringgit"},
+	{"Country":"Singapore", "CurrencyCode":"SGD", "CurrencyDesc":"Singapore Dollars"},
+	]
+}

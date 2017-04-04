@@ -1,0 +1,20 @@
+{
+    "inputMessageMetadata": {
+        "flowVariables": {
+            "currencyCode": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "currencyList"
+            }
+        }
+    },
+    "outputMessageMetadata": {
+        "flowVariables": {
+            "javaCurrencyList": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "JavaCurrencyList"
+            }
+        }
+    },
+    "id": "0a768c01-4cc9-43d9-9db0-430636976dc9",
+    "version": "5.2.0.0"
+}

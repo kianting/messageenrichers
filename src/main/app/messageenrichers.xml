@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
+    
+    <flow name="messageenrichersFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/test" doc:name="HTTP"/>
+        <json:json-to-object-transformer    doc:name="JSON to Object" mimeType="application/java" returnClass="java.lang.Object"/>
+        <enricher doc:name="Msg Enricher: Getting List Of Currency" >
+            <vm:outbound-endpoint exchange-pattern="request-response" path="code" connector-ref="VM" doc:name="VM"/>
+            <enrich source="" target="#[flowVars['currencyCode']]" />
+        </enricher>
+        <enricher doc:name="Msg Enricher : Converting Json CurrencyList to HashMap" target="#[flowVars['JavaCurrencyCode']]">
+              <expression-transformer expression="#[new com.fasterxml.jackson.databind.ObjectMapper().readValue(flowVars.currencyCode, java.util.HashMap)]" doc:name="Expression"/>
+        </enricher>
+ 
+        
+        <foreach doc:name="Looping through Payload" collection="#[payload.order]">
+            <scripting:component doc:name="Groovy">
+                <scripting:script engine="Groovy"><![CDATA[def curArrayList = flowVars.JavaCurrencyCode.get("Currency");
+for (i = 0; i <curArrayList.size(); i++) {
+    def item = curArrayList.get(i);
+    System.out.println(item.get("Country"));
+    if(payload.country.equals(item.get("Country"))){
+      payload.item.currency = item.get("CurrencyCode")
+      break;
+    }
+}]]></scripting:script>
+            </scripting:component>
+
+        </foreach>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+
+        <logger message="flowVars.currencyCode :  #[flowVars.currencyCode]  ------------------- #[flowVars.JavaCurrencyCode]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="ExternalWebAPI"> 
+        <vm:inbound-endpoint exchange-pattern="request-response" path="code" connector-ref="VM" doc:name="VM"/>
+        <set-payload value="{
+	&quot;Currency&quot;: [
+	{&quot;Country&quot;:&quot;New Zealand&quot;,&quot;CurrencyCode&quot;:&quot;NZD&quot;, &quot;CurrencyDesc&quot;:&quot;New Zealand Dollars&quot;},
+	{&quot;Country&quot;:&quot;Malaysia&quot;, &quot;CurrencyCode&quot;:&quot;MYR&quot;, &quot;CurrencyDesc&quot;:&quot;Malaysia Ringgit&quot;},
+	{&quot;Country&quot;:&quot;Singapore&quot;, &quot;CurrencyCode&quot;:&quot;SGD&quot;, &quot;CurrencyDesc&quot;:&quot;Singapore Dollars&quot;}
+	]
+}" encoding="UTF-8" mimeType="application/json" doc:name="Set Payload"/>
+    </flow>
+</mule>
